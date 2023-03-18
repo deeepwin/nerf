@@ -129,3 +129,10 @@ dmypy.json
 .pyre/
 
 *.png
+*.bin
+*.ini
+*.json
+*.txt
+*.yml
+*.db
+*.ckpt
