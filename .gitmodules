@@ -1,0 +1,3 @@
+[submodule "nerf-multinerf"]
+	path = nerf-multinerf
+	url = https://github.com/deeepwin/nerf-multinerf.git
