@@ -1,6 +1,79 @@
 # includes CUDA 11.3.1, cuDNN 8.2.0.53
 FROM nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04
 
-# install system packages
+# keeps Python from generating .pyc files in the container
+ENV PYTHONDONTWRITEBYTECODE=1
 
-# install Python packages
+# Turns off buffering for easier container logging
+ENV PYTHONUNBUFFERED=1
+
+# Copy requirements.txt file to /app for pip installation in next steps
+RUN mkdir /app
+COPY ./requirements.txt /app
+
+# Set timezone, this is required for building python and running app at right time
+ENV TZ=America/New_York
+
+# for installation use bash, shell will not work well
+SHELL ["/bin/bash", "-c"]
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
+    && apt-get update \
+    && apt-get install -y libsqlite3-dev \ 
+    && apt-get install -y wget \
+    && apt-get install -y trash-cli \
+    && apt install -y graphviz \
+    && apt-get install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libbz2-dev liblzma-dev wget \
+    && apt-get install -y checkinstall \
+    && echo "Installed binaries." \
+    && adduser -u 5678 --disabled-password --gecos "" appuser \
+    && apt-get clean all \
+    && VERSION=3.9.15 \
+    && if ! [ -f "$FILE" ]; then wget https://www.python.org/ftp//python/$VERSION/Python-$VERSION.tgz ; fi \
+    && tar xzf Python-$VERSION.tgz \
+    && cd Python-$VERSION \
+    && ./configure \
+    && make altinstall \
+    && make clean \
+    && cd .. \
+    && rm -rf Python-$VERSION \
+    && rm Python-$VERSION.tgz \
+    && cd /home/appuser \
+    && echo alias python=python3.9 >> .bashrc \
+    && echo alias pip=pip3.9 >> .bashrc \
+    && echo "Installed Python." \
+    && cd /app \
+    && /usr/local/bin/pip3.9 --no-cache-dir install -r requirements.txt \
+    && echo "Installed all pip packages." \
+    && wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz \
+    && tar -xzf ta-lib-0.4.0-src.tar.gz \
+    && cd ta-lib \
+    && ./configure --prefix=/usr \
+    && make \
+    && make install \
+    && make clean \
+    && cd .. \
+    && rm -rf ta-lib/ \
+    && rm ta-lib-0.4.0-src.tar.gz \
+    && /usr/local/bin/pip3.9 --no-cache-dir install ta-lib==0.4.19 \
+    && echo "Installed ta-lib." \
+    && /usr/local/bin/python3.9 -c 'import talib' \
+    && apt-get remove -y build-essential \
+    && apt-get remove -y wget \
+    && apt-get autoremove -y \
+    && trash-empty \
+    && echo "Finished."
+
+# Copy project data at end to save deployment time
+COPY . ./app
+
+RUN chown -R appuser /app
+
+USER appuser
+
+WORKDIR /app
+
+ENV PORT 8080
+
+# During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
+CMD ["python3.9", "live.py"]
