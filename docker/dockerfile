@@ -12,7 +12,7 @@
 # To create docker image
 #
 #   1. Go to folder where dockerfile is located
-#   2. Run `docker build -t nerf`
+#   2. Run `docker build -t nerf .`
 #
 # To check CUDA version in Docker image
 # 
