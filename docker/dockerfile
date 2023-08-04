@@ -1,79 +1,86 @@
+#
+# FILE: dockerfile
+#
+# DESCRIPTION: Docker image for NeRF experiments
+#
+# AUTHOR: Deeepwin
+#
+# DATE: 04.08.2023
+#
+# USAGE: 
+#
+# To create docker image
+#
+#   1. Go to folder where dockerfile is located
+#   2. Run `docker build -t nerf`
+#
+# To check CUDA version in Docker image
+# 
+#   docker run -it --gpus all <docker tag> nvidia-smi
+#
+
 # includes CUDA 11.3.1, cuDNN 8.2.0.53
 FROM nvidia/cuda:11.3.1-cudnn8-devel-ubuntu20.04
 
 # keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# Turns off buffering for easier container logging
+# turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
-# Copy requirements.txt file to /app for pip installation in next steps
-RUN mkdir /app
-COPY ./requirements.txt /app
+# set timezone 
+ENV TZ=Europe/Zurich
 
-# Set timezone, this is required for building python and running app at right time
-ENV TZ=America/New_York
+# force non-interactive 
+ARG DEBIAN_FRONTEND=noninteractive
 
 # for installation use bash, shell will not work well
 SHELL ["/bin/bash", "-c"]
 
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
-    && apt-get update \
-    && apt-get install -y libsqlite3-dev \ 
-    && apt-get install -y wget \
-    && apt-get install -y trash-cli \
-    && apt install -y graphviz \
-    && apt-get install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libbz2-dev liblzma-dev wget \
-    && apt-get install -y checkinstall \
-    && echo "Installed binaries." \
-    && adduser -u 5678 --disabled-password --gecos "" appuser \
-    && apt-get clean all \
-    && VERSION=3.9.15 \
-    && if ! [ -f "$FILE" ]; then wget https://www.python.org/ftp//python/$VERSION/Python-$VERSION.tgz ; fi \
-    && tar xzf Python-$VERSION.tgz \
-    && cd Python-$VERSION \
-    && ./configure \
-    && make altinstall \
-    && make clean \
-    && cd .. \
-    && rm -rf Python-$VERSION \
-    && rm Python-$VERSION.tgz \
-    && cd /home/appuser \
-    && echo alias python=python3.9 >> .bashrc \
-    && echo alias pip=pip3.9 >> .bashrc \
-    && echo "Installed Python." \
-    && cd /app \
-    && /usr/local/bin/pip3.9 --no-cache-dir install -r requirements.txt \
-    && echo "Installed all pip packages." \
-    && wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz \
-    && tar -xzf ta-lib-0.4.0-src.tar.gz \
-    && cd ta-lib \
-    && ./configure --prefix=/usr \
-    && make \
-    && make install \
-    && make clean \
-    && cd .. \
-    && rm -rf ta-lib/ \
-    && rm ta-lib-0.4.0-src.tar.gz \
-    && /usr/local/bin/pip3.9 --no-cache-dir install ta-lib==0.4.19 \
-    && echo "Installed ta-lib." \
-    && /usr/local/bin/python3.9 -c 'import talib' \
-    && apt-get remove -y build-essential \
-    && apt-get remove -y wget \
-    && apt-get autoremove -y \
-    && trash-empty \
-    && echo "Finished."
+# create user, but to not yet activate
+RUN useradd -rm -d /home/ipca -s /bin/bash -g root -G sudo -u 1001 ipca
+WORKDIR /home/ipca
 
-# Copy project data at end to save deployment time
-COPY . ./app
+# install python base package
+RUN apt-get update \
+    && apt-get -y install python3.8 \
+    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1 \
+    && apt-get -y install python3.8-venv \
+    && apt-get install -y python3-opencv \
+    && apt-get -y install git
 
-RUN chown -R appuser /app
+# setup virtual environments
+RUN mkdir envs \
+    && python3 -m venv envs/sdfstudio \
+    && python3 -m venv envs/nerfstudio
 
-USER appuser
+# setup environment variables
+ENV CUDA_HOME /usr/local/cuda-11.3
 
-WORKDIR /app
+# install in sdfstudio and tinydudnn
+RUN source envs/sdfstudio/bin/activate \
+    && pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 -f https://download.pytorch.org/whl/torch_stable.html
+
+# cuda tool kit, check with nvcc --verion
+RUN apt-get -y install nvidia-cuda-toolkit \
+    && apt-get -y install nvidia-utils-535
+
+# install c compiler version 9
+RUN apt-get -y install g++-9 \
+    && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 9 \
+    && update-alternatives --config g++ \
+    && apt-get -y install gcc-9 \
+    && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 9 \
+    && update-alternatives --config gcc
+
+# RUN source envs/sdfstudio/bin/activate \
+#     && pip install ninja git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
+
+# install nerfstudio, base for sdfstudio as well
+#RUN pip install nerfstudio
+
+# activate user
+#USER ipca
 
 ENV PORT 8080
 
-# During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
-CMD ["python3.9", "live.py"]
