@@ -1,7 +1,7 @@
 #
 # FILE: dockerfile
 #
-# DESCRIPTION: Docker image for NeRF experiments including Tiny CUDA NN framework
+# DESCRIPTION: Docker image for NeRF experiments using NerfStudio or SdfStudio including Tiny CUDA NN framework
 #
 # AUTHOR: Deeepwin
 #
@@ -9,32 +9,24 @@
 #
 # INSTALLATION: 
 #
-# To create docker image:
+#   Ensure correct host installation to support CUDA container runtime. Follow these instructions:
+# 
+#   https://collabnix.com/introducing-new-docker-cli-api-support-for-nvidia-gpus-under-docker-engine-19-03-0-beta-release/
+#
+# USAGE: 
+#
+#   To create docker image:
 #
 #   1. Go to folder where dockerfile is located
 #   2. Run `docker build -t <image name> .`
 #
-# To configure Docker to use GPU's (CUDA Container Runtime) during build, create /etc/docker/daemon.json and add:
-#
-# {
-#     "runtimes": {
-#         "nvidia": {
-#             "path": "/usr/bin/nvidia-container-runtime",
-#             "runtimeArgs": []
-#          } 
-#     },
-#     "default-runtime": "nvidia" 
-# }
-#
-# To ensure CUDA Container Runtime is installed correctly on host, follow these instructions:
-#
-#   1. https://collabnix.com/introducing-new-docker-cli-api-support-for-nvidia-gpus-under-docker-engine-19-03-0-beta-release/
-#   2. Then restart daemon `sudo systemctl restart docker`
-#   3. Check CUDA version in Docker image with `docker run -it --gpus all <docker tag> nvidia-smi`
-#
-# To run docker image use GPU options:
+#   To run docker image with GPU support:
 #
 #   docker run -it --rm --gpus all <docker tag>
+#
+#   To free up disk space, remove dangling images:
+#
+#   docker images -f dangling=true && docker system prune
 #
 
 # includes CUDA 11.3.1, cuDNN 8.2.0.53
@@ -62,26 +54,11 @@ WORKDIR /home/ipca
 # install python base package
 RUN apt-get update \
     && apt-get -y install python3.8 \
-    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1 \
     && apt-get -y install python3.8-venv \
-    && apt-get install -y python3-opencv \
-    && apt-get install python3-dev \
-    && apt-get -y install git
-
-# setup virtual environments
-RUN mkdir envs \
-    && python3 -m venv envs/sdfstudio \
-    && python3 -m venv envs/nerfstudio
-
-# setup environment variables
-ENV CUDA_HOME /usr/local/cuda-11.3
-
-# install pytorch
-RUN source envs/sdfstudio/bin/activate \
-    && pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 -f https://download.pytorch.org/whl/torch_stable.html
-
-# install cuda toolkit, check with nvcc --version
-RUN apt-get -y install nvidia-cuda-toolkit
+    && apt-get -y install python3-opencv \
+    && apt-get -y install python3-dev \
+    && apt-get -y install git \
+    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
 
 # install c compiler version 9
 RUN apt-get -y install g++-9 \
@@ -91,12 +68,33 @@ RUN apt-get -y install g++-9 \
     && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 9 \
     && update-alternatives --config gcc
 
-# install tinycudann
-# RUN source envs/sdfstudio/bin/activate \
-#     && pip install wheel \
-#     && pip install ninja git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
+# install cuda toolkit, check with nvcc --version
+RUN apt-get -y install nvidia-cuda-toolkit
 
-# install nerfstudio, sdfstudio and other tools
+# setup environment variables (host configuration) to install Tiny CUDA NN
+#ENV CUDA_HOME /home/martin/anaconda3/envs/sdfstudio
+#ENV LD_LIBRARY_PATH LD_LIBRARY_PATH=/home/martin/anaconda3/envs/sdfstudio/lib/stubs:/home/martin/anaconda3/envs/sdfstudio/lib:/home/martin/anaconda3/envs/sdfstudio/extras/CUPTI/lib64
+
+# setup environment variables (docker configuration)
+ENV CUDA_HOME /usr/local/cuda-11.3
+ENV LD_LIBRARY_PATH /usr/local/cuda/lib64/stubs/:$LD_LIBRARY_PATH
+ENV TCNN_CUDA_ARCHITECTURES 75
+
+# setup virtual environments
+RUN mkdir envs \
+    && python3 -m venv envs/sdfstudio \
+    && python3 -m venv envs/nerfstudio
+
+# install pytorch
+RUN source envs/sdfstudio/bin/activate \
+    && pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 -f https://download.pytorch.org/whl/torch_stable.html
+
+# install tinycudann
+RUN source envs/sdfstudio/bin/activate \
+    && pip install wheel \
+    && pip install ninja git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
+
+# install nerfstudio and sdfstudio
 #RUN source envs/sdfstudio/bin/activate \
 #   && pip install nerfstudio \
 #   && git clone https://github.com/autonomousvision/sdfstudio.git \
