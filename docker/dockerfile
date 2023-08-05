@@ -26,7 +26,7 @@
 #
 #   To free up disk space, remove dangling images:
 #
-#   docker images -f dangling=true && docker system prune
+#   docker builder prune && docker system prune
 #
 
 # includes CUDA 11.3.1, cuDNN 8.2.0.53
@@ -58,6 +58,7 @@ RUN apt-get update \
     && apt-get -y install python3-opencv \
     && apt-get -y install python3-dev \
     && apt-get -y install git \
+    && apt-get -y install curl \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
 
 # install c compiler version 9
@@ -73,7 +74,7 @@ RUN apt-get -y install nvidia-cuda-toolkit
 
 # setup environment variables (docker image configuration, not host)
 ENV CUDA_HOME /usr/local/cuda-11.3
-ENV LD_LIBRARY_PATH /usr/local/cuda/lib64/stubs/:$LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH /usr/local/cuda/lib64
 ENV TCNN_CUDA_ARCHITECTURES 75
 
 # setup virtual environments
@@ -94,21 +95,30 @@ RUN source envs/sdfstudio/bin/activate \
 RUN source envs/sdfstudio/bin/activate \
     && python3 -m pip install --upgrade pip \
     && pip install nerfstudio \
+    && mkdir nerf \
+    && cd nerf \
     && git clone https://github.com/autonomousvision/sdfstudio.git \
     && cd sdfstudio \
     && pip install -e . \
+    && cd .. \
     && cd ..
 
-# clean up, ensure compatibility
+# ensure compatibility
 RUN source envs/sdfstudio/bin/activate \
   && pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 -f https://download.pytorch.org/whl/torch_stable.html \
   && pip install nerfacc -f https://nerfacc-bucket.s3.us-west-2.amazonaws.com/whl/torch-1.12.1_cu113.html \
   && pip install Pillow==9.5.0 \
   && pip install functorch==0.2.1
 
-#RUN ns-install-cli
+# clean up
+RUN source envs/sdfstudio/bin/activate \
+    && apt-get clean \
+    && apt-get autoclean
 
 # activate user
-#USER ipca
+RUN chown -R ipca /home/ipca/nerf
+USER ipca
 
-ENV PORT 8080
+# finish
+CMD source envs/sdfstudio/bin/activate && ns-install-cli --mode install && /bin/bash
+
