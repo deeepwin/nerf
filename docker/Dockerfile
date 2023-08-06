@@ -116,12 +116,10 @@ RUN source envs/sdfstudio/bin/activate \
     && apt-get clean \
     && apt-get autoclean
 
-RUN apt-get -y install nvidia-utils-525
-
 # activate user
 RUN chown -R ipca /home/ipca/nerf
 USER ipca
 
 # finish
-CMD source envs/sdfstudio/bin/activate && ns-install-cli --mode install && /bin/bash
+#CMD source envs/sdfstudio/bin/activate && ns-install-cli --mode install && /bin/bash
 
