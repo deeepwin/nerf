@@ -1,5 +1,5 @@
 #
-# FILE: dockerfile
+# FILE: Dockerfile
 #
 # DESCRIPTION: Docker image for NeRF experiments using NerfStudio or SdfStudio including Tiny CUDA NN framework
 #
