@@ -18,7 +18,7 @@
 #   To create docker image:
 #
 #   1. Go to folder where dockerfile is located
-#   2. Run `docker build -t <image name> .`
+#   2. Run `docker build --progress plain -t <image name> .`
 #
 #   To run docker image with GPU support:
 #
@@ -120,5 +120,5 @@ RUN chown -R ipca /home/ipca/nerf
 USER ipca
 
 # finish
-CMD source envs/sdfstudio/bin/activate && ns-install-cli --mode install && /bin/bash
+#CMD source envs/sdfstudio/bin/activate && ns-install-cli --mode install && /bin/bash
 
