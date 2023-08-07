@@ -69,8 +69,8 @@ RUN apt-get -y install g++-9 \
     && update-alternatives --config gcc
 
 # install nvidia environment, check with nvcc --version
-RUN apt-get -y install nvidia-utils-525 \ 
-    && apt-get -y install nvidia-cuda-toolkit
+#RUN apt-get -y install nvidia-utils-525 \ 
+RUN apt-get -y install nvidia-cuda-toolkit
 
 # setup environment variables (docker image configuration, not host)
 ENV CUDA_HOME /usr/local/cuda-11.3
@@ -114,6 +114,8 @@ RUN source envs/sdfstudio/bin/activate \
 RUN source envs/sdfstudio/bin/activate \
     && apt-get clean \
     && apt-get autoclean
+    
 # finish
-RUN source envs/sdfstudio/bin/activate \ 
-    && ns-install-cli --mode install
+CMD source /home/env/envs/sdfstudio/bin/activate \
+    && ns-install-cli --mode install \
+    && /bin/bash
