@@ -68,7 +68,7 @@ RUN apt-get -y install g++-9 \
     && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 9 \
     && update-alternatives --config gcc
 
-# install nvidia envronment, check with nvcc --version
+# install nvidia environment, check with nvcc --version
 RUN apt-get -y install nvidia-utils-525 \ 
     && apt-get -y install nvidia-cuda-toolkit
 
@@ -114,6 +114,9 @@ RUN source envs/sdfstudio/bin/activate \
 RUN source envs/sdfstudio/bin/activate \
     && apt-get clean \
     && apt-get autoclean
+
+# give access to all for working folder
+RUN chmod -R 777 /home/env
 
 # finish
 #CMD source envs/sdfstudio/bin/activate && ns-install-cli --mode install && /bin/bash
