@@ -114,10 +114,6 @@ RUN source envs/sdfstudio/bin/activate \
 RUN source envs/sdfstudio/bin/activate \
     && apt-get clean \
     && apt-get autoclean
-
-# give access to all for working folder
-RUN chmod -R 777 /home/env
-
 # finish
-#CMD source envs/sdfstudio/bin/activate && ns-install-cli --mode install && /bin/bash
-
+RUN source envs/sdfstudio/bin/activate \ 
+    && ns-install-cli --mode install
