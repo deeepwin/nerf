@@ -47,9 +47,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 # for installation use bash, shell will not work well
 SHELL ["/bin/bash", "-c"]
 
-# create user, but do not yet activate
-RUN useradd -rm -d /home/ipca -s /bin/bash -g root -G sudo -u 1001 ipca
-WORKDIR /home/ipca
+# do not create separate user account, as singularity would use host account
+WORKDIR /home/env
 
 # install python environment
 RUN apt-get update \
@@ -96,8 +95,8 @@ RUN source envs/sdfstudio/bin/activate \
 RUN source envs/sdfstudio/bin/activate \
     && python3 -m pip install --upgrade pip \
     && pip install nerfstudio \
-    && mkdir nerf \
-    && cd nerf \
+    && mkdir tools \
+    && cd tools \
     && git clone https://github.com/autonomousvision/sdfstudio.git \
     && cd sdfstudio \
     && pip install -e . \
@@ -115,10 +114,6 @@ RUN source envs/sdfstudio/bin/activate \
 RUN source envs/sdfstudio/bin/activate \
     && apt-get clean \
     && apt-get autoclean
-
-# activate user
-RUN chown -R ipca /home/ipca/nerf
-USER ipca
 
 # finish
 #CMD source envs/sdfstudio/bin/activate && ns-install-cli --mode install && /bin/bash
