@@ -13,6 +13,11 @@
 # 
 #   https://collabnix.com/introducing-new-docker-cli-api-support-for-nvidia-gpus-under-docker-engine-19-03-0-beta-release/
 #
+#
+# IMPORTANCE NOTICE:
+#
+#   Keep docker layer size below 5GB, otherwise singularity/apptainer conversion won't work
+#
 # USAGE: 
 #
 #   To create docker image:
@@ -58,19 +63,15 @@ RUN apt-get update \
     && apt-get -y install python3-dev \
     && apt-get -y install git \
     && apt-get -y install curl \
+    && apt-get clean \
+    && apt-get autoclean \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
 
-# install c compiler version 9
-RUN apt-get -y install g++-9 \
-    && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 9 \
-    && update-alternatives --config g++ \
-    && apt-get -y install gcc-9 \
-    && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 9 \
-    && update-alternatives --config gcc
-
 # install nvidia environment, check with nvcc --version
-#RUN apt-get -y install nvidia-utils-525 \ 
-RUN apt-get -y install nvidia-cuda-toolkit
+RUN apt-get -y install nvidia-utils-525 \ 
+    && apt-get -y install nvidia-cuda-toolkit \
+    && apt-get clean \
+    && apt-get autoclean
 
 # setup environment variables (docker image configuration, not host)
 ENV CUDA_HOME /usr/local/cuda-11.3
@@ -82,40 +83,41 @@ RUN mkdir envs \
     && python3 -m venv envs/sdfstudio \
     && python3 -m venv envs/nerfstudio
 
-# install pytorch into `sdfstudio`
+# install pytorch into `sdfstudio` environment
 RUN source envs/sdfstudio/bin/activate \
-    && pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 -f https://download.pytorch.org/whl/torch_stable.html
+    && pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 -f https://download.pytorch.org/whl/torch_stable.html --no-cache-dir
 
 # install tinycudann
 RUN source envs/sdfstudio/bin/activate \
-    && pip install wheel \
-    && pip install ninja git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
+    && pip install wheel --no-cache-dir \
+    && pip install ninja --no-cache-dir
 
-# install nerfstudio and sdfstudio
+RUN source envs/sdfstudio/bin/activate \
+  && pip install git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch --no-cache-dir
+
+# install nerfstudio, use nerfstudio 0.1.9 to keep torch 1.12.1, don't upgrade otherwise layer will blow up 
 RUN source envs/sdfstudio/bin/activate \
     && python3 -m pip install --upgrade pip \
-    && pip install nerfstudio \
+    && pip install --upgrade-strategy=only-if-needed nerfstudio==0.1.9 --no-cache-dir
+
+# install sdfstudio
+RUN source envs/sdfstudio/bin/activate \
     && mkdir tools \
     && cd tools \
     && git clone https://github.com/autonomousvision/sdfstudio.git \
     && cd sdfstudio \
-    && pip install -e . \
+    && pip install -e . --no-cache-dir \
     && cd .. \
     && cd ..
 
-# ensure compatibility
+# ensure compatibility, this should not change the installation, cross check
 RUN source envs/sdfstudio/bin/activate \
-  && pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 -f https://download.pytorch.org/whl/torch_stable.html \
-  && pip install nerfacc -f https://nerfacc-bucket.s3.us-west-2.amazonaws.com/whl/torch-1.12.1_cu113.html \
-  && pip install Pillow==9.5.0 \
-  && pip install functorch==0.2.1
-
-# clean up
-RUN source envs/sdfstudio/bin/activate \
-    && apt-get clean \
-    && apt-get autoclean
+  && pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 -f https://download.pytorch.org/whl/torch_stable.html --no-cache-dir \
+  && pip install nerfacc -f https://nerfacc-bucket.s3.us-west-2.amazonaws.com/whl/torch-1.12.1_cu113.html --no-cache-dir \
+  && pip install Pillow==9.5.0 --no-cache-dir \
+  && pip install functorch==0.2.1 --no-cache-dir
     
 # finish
-CMD source /home/env/envs/sdfstudio/bin/activate \
-    && ns-install-cli --mode install \
-    && /bin/bash
+# CMD source /home/env/envs/sdfstudio/bin/activate \
+#     && ns-install-cli --mode install \
+#     && /bin/bash
