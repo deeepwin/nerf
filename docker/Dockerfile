@@ -22,16 +22,16 @@
 #
 #   To create docker image:
 #
-#   1. Go to folder where dockerfile is located
-#   2. Run `docker build --progress plain -t <image name> .`
+#       1. Go to folder where dockerfile is located
+#       2. Run `docker build --progress plain -t <image name> .`
 #
 #   To run docker image with GPU support:
 #
-#   docker run -it --rm --gpus all <docker tag>
+#       docker run -it --rm --gpus all <docker tag>
 #
 #   To free up disk space, remove dangling images:
 #
-#   docker builder prune && docker system prune
+#       docker builder prune && docker system prune
 #
 
 # includes CUDA 11.3.1, cuDNN 8.2.0.53
@@ -118,6 +118,6 @@ RUN source envs/sdfstudio/bin/activate \
   && pip install functorch==0.2.1 --no-cache-dir
     
 # finish
-# CMD source /home/env/envs/sdfstudio/bin/activate \
+CMD source /home/env/envs/sdfstudio/bin/activate \
 #     && ns-install-cli --mode install \
-#     && /bin/bash
+    && /bin/bash
