@@ -146,4 +146,4 @@ dmypy.json
 *.mp4
 *.sif
 *.conf
-./docker/build*
+**/build*
