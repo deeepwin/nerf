@@ -145,3 +145,5 @@ dmypy.json
 *.npy
 *.mp4
 *.sif
+*.conf
+./docker/build*

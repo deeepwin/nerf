@@ -1,7 +1,7 @@
 #
 # FILE: Dockerfile
 #
-# DESCRIPTION: Docker image for NeRF experiments using NerfStudio or SdfStudio including Tiny CUDA NN framework
+# DESCRIPTION: Docker image for NeRF experiments using SDF Studio including Tiny CUDA NN framework
 #
 # AUTHOR: Deeepwin
 #
@@ -16,7 +16,9 @@
 #
 # IMPORTANCE NOTICE:
 #
-#   Keep docker layer size below 5GB, otherwise singularity/apptainer conversion won't work
+#   - Keep docker layer size below 5GB, otherwise singularity/apptainer conversion won't work
+#   - SDF Studio currently contains nerfstudio 0.1.12 which requires torch 1.12.1 and cuda 11.3.1
+#   - If SDF Studio upgrades, we can upgrade to at least nerfstudio 0.3.2, torch 1.13.1, torchvision 0.14.1 and cuda 11.7
 #
 # USAGE: 
 #
@@ -80,8 +82,7 @@ ENV TCNN_CUDA_ARCHITECTURES 75
 
 # setup virtual environments
 RUN mkdir envs \
-    && python3 -m venv envs/sdfstudio \
-    && python3 -m venv envs/nerfstudio
+    && python3 -m venv envs/sdfstudio
 
 # install pytorch into `sdfstudio` environment
 RUN source envs/sdfstudio/bin/activate \
@@ -95,10 +96,10 @@ RUN source envs/sdfstudio/bin/activate \
 RUN source envs/sdfstudio/bin/activate \
   && pip install git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch --no-cache-dir
 
-# install nerfstudio, use nerfstudio 0.1.9 to keep torch 1.12.1, don't upgrade otherwise layer will blow up 
+# install nerfstudio, use nerfstudio 0.1. to keep torch 1.12.1, don't upgrade otherwise layer will blow up 
 RUN source envs/sdfstudio/bin/activate \
     && python3 -m pip install --upgrade pip \
-    && pip install --upgrade-strategy=only-if-needed nerfstudio==0.1.9 --no-cache-dir
+    && pip install --upgrade-strategy=only-if-needed nerfstudio==0.1.12 --no-cache-dir
 
 # install sdfstudio
 RUN source envs/sdfstudio/bin/activate \
