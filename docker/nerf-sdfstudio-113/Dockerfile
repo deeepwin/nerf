@@ -93,7 +93,7 @@ RUN source envs/sdfstudio/bin/activate \
 RUN source envs/sdfstudio/bin/activate \
   && pip install git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch --no-cache-dir
 
-# install nerfstudio, use nerfstudio 0.1. to keep torch 1.12.1, don't upgrade otherwise layer will blow up 
+# install nerfstudio, use nerfstudio 0.1.12 as it is required by current sdfstudio version 
 RUN source envs/sdfstudio/bin/activate \
     && python3 -m pip install --upgrade pip \
     && pip install --upgrade-strategy=only-if-needed nerfstudio==0.1.12 --no-cache-dir
