@@ -27,13 +27,18 @@
 #       1. Go to folder where dockerfile is located
 #       2. Run `docker build --progress plain -t <image name> .`
 #
-#   To run docker image with GPU support:
+#   To run docker image (here test image) with GPU support:
 #
-#       docker run -it --rm --gpus all <docker tag>
+#       sudo docker run -it --rm --gpus all nvidia/cuda:11.6.2-base-ubuntu20.04 nvidia-smi
 #
 #   To free up disk space, remove dangling images:
 #
 #       docker builder prune && docker system prune
+#
+#   To build and a apptainer from Docker image:
+#
+#       1. APPTAINER_NOHTTPS=1 apptainer build --sandbox --docker-login <sif file> docker://<docker registry url to image>
+#       2. apptainer run --writable --nv <sif file>
 #
 
 # includes CUDA 11.3.1, cuDNN 8.2.0.53
@@ -69,15 +74,7 @@ RUN apt-get update \
     && apt-get autoclean \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
 
-# install nvidia environment, check with nvcc --version
-RUN apt-get -y install nvidia-utils-525 \ 
-    && apt-get -y install nvidia-cuda-toolkit \
-    && apt-get clean \
-    && apt-get autoclean
-
 # setup environment variables (docker image configuration, not host)
-ENV CUDA_HOME /usr/local/cuda-11.3
-ENV LD_LIBRARY_PATH /usr/local/cuda/lib64
 ENV TCNN_CUDA_ARCHITECTURES 75
 
 # setup virtual environments
@@ -119,6 +116,6 @@ RUN source envs/sdfstudio/bin/activate \
   && pip install functorch==0.2.1 --no-cache-dir
     
 # finish
-CMD source /home/env/envs/sdfstudio/bin/activate \
-#     && ns-install-cli --mode install \
-    && /bin/bash
+# CMD source /home/env/envs/sdfstudio/bin/activate \
+#    && ns-install-cli --mode install \
+#    && /bin/bash

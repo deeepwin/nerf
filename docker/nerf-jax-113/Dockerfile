@@ -68,17 +68,6 @@ RUN apt-get update \
     && apt-get autoclean \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
 
-# install nvidia environment, check with nvcc --version
-RUN apt-get -y install nvidia-utils-525 \ 
-    && apt-get -y install nvidia-cuda-toolkit \
-    && apt-get clean \
-    && apt-get autoclean
-
-# setup environment variables (docker image configuration, not host)
-ENV CUDA_HOME /usr/local/cuda-11.3
-ENV LD_LIBRARY_PATH /usr/local/cuda/lib64
-ENV TCNN_CUDA_ARCHITECTURES 75
-
 # setup virtual environments
 RUN mkdir envs \
     && python3 -m venv envs/jax
