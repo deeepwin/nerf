@@ -13,10 +13,27 @@
 # 
 #   https://collabnix.com/introducing-new-docker-cli-api-support-for-nvidia-gpus-under-docker-engine-19-03-0-beta-release/
 #
+#   Nerfstudio 'ns-install' script requries runtime GPU during Docker build. However, this is not directly
+#   supported, therefore the 'ns-install' is run in container, then comitted as image (work around):
+#
+#   1. First run docker image in terminal
+#       sudo docker run -it --rm --gpus all nerf-sdfstudio-117-init
+#
+#   2. Then install Nerfstudio tools in container
+#       source /home/env/envs/nerfstudio/bin/activate
+#       > ns-install-cli --mode install
+#
+#   3. In another terminal get the running container id
+#       docker container ls
+#
+#   4. Commit container to new image using id
+#       docker commit ca8dde80a161 nerf-nerfstudio-117
 #
 # IMPORTANCE NOTICE:
 #
 #   - Keep docker layer size below 5GB, otherwise singularity/apptainer conversion won't work
+#   - SDF Studio currently contains nerfstudio 0.1.12 which requires torch 1.12.1 and cuda 11.3.1
+#   - If SDF Studio upgrades, we can upgrade to at least nerfstudio 0.3.2, torch 1.13.1, torchvision 0.14.1 and cuda 11.7
 #
 # USAGE: 
 #
@@ -25,13 +42,18 @@
 #       1. Go to folder where dockerfile is located
 #       2. Run `docker build --progress plain -t <image name> .`
 #
-#   To run docker image with GPU support:
+#   To run docker image (here test image) with GPU support:
 #
-#       docker run -it --rm --gpus all <docker tag>
+#       sudo docker run -it --rm --gpus all nvidia/cuda:11.6.2-base-ubuntu20.04 nvidia-smi
 #
 #   To free up disk space, remove dangling images:
 #
 #       docker builder prune && docker system prune
+#
+#   To build and a apptainer from Docker image:
+#
+#       1. APPTAINER_NOHTTPS=1 apptainer build --docker-login <sif file> docker://<docker registry url>
+#       2. apptainer run --nv <sif file>
 #
 
 # includes CUDA 11.7.1
@@ -92,6 +114,5 @@ RUN source envs/nerfstudio/bin/activate \
     && pip install --upgrade-strategy=only-if-needed nerfstudio --no-cache-dir
 
 # finish
-# CMD source /home/env/envs/nerfstudio/bin/activate \
-#     && ns-install-cli --mode install \
-#     && /bin/bash
+CMD source /home/env/envs/sdfstudio/bin/activate \
+   && /bin/bash

@@ -13,6 +13,21 @@
 # 
 #   https://collabnix.com/introducing-new-docker-cli-api-support-for-nvidia-gpus-under-docker-engine-19-03-0-beta-release/
 #
+#   Nerfstudio 'ns-install' script requries runtime GPU during Docker build. However, this is not directly
+#   supported, therefore the 'ns-install' is run in container, then comitted as image (work around):
+#
+#   1. First run docker image in terminal
+#       sudo docker run -it --rm --gpus all nerf-sdfstudio-113-init
+#
+#   2. Then install Nerfstudio tools in container
+#       source /home/env/envs/sdfstudio/bin/activate
+#       > ns-install-cli --mode install
+#
+#   3. In another terminal get the running container id
+#       docker container ls
+#
+#   4. Commit container to new image using id
+#       docker commit ca8dde80a161 nerf-sdfstudio-113
 #
 # IMPORTANCE NOTICE:
 #
@@ -37,8 +52,8 @@
 #
 #   To build and a apptainer from Docker image:
 #
-#       1. APPTAINER_NOHTTPS=1 apptainer build --sandbox --docker-login <sif file> docker://<docker registry url to image>
-#       2. apptainer run --writable --nv <sif file>
+#       1. APPTAINER_NOHTTPS=1 apptainer build --docker-login <sif file> docker://<docker registry url>
+#       2. apptainer run --nv <sif file>
 #
 
 # includes CUDA 11.3.1, cuDNN 8.2.0.53
@@ -116,6 +131,5 @@ RUN source envs/sdfstudio/bin/activate \
   && pip install functorch==0.2.1 --no-cache-dir
     
 # finish
-# CMD source /home/env/envs/sdfstudio/bin/activate \
-#    && ns-install-cli --mode install \
-#    && /bin/bash
+CMD source /home/env/envs/sdfstudio/bin/activate \
+   && /bin/bash
