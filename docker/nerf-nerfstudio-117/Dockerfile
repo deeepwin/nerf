@@ -114,5 +114,5 @@ RUN source envs/nerfstudio/bin/activate \
     && pip install --upgrade-strategy=only-if-needed nerfstudio --no-cache-dir
 
 # finish
-CMD source /home/env/envs/sdfstudio/bin/activate \
+CMD source /home/env/envs/nerfstudio/bin/activate \
    && /bin/bash
